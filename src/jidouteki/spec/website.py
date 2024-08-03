@@ -31,8 +31,8 @@ class Series(DictSpec):
 class Match(ListSpec):
     def parse(self, url):
         for regex in self:
-            match = next((m.groupdict() for m in re.finditer(regex, url)), None)
-            if match != None: return match
+            if (m := re.match(regex, url)):
+                return m.groupdict()
 
 class Chapter(DictSpec):
     pages: Parsable
