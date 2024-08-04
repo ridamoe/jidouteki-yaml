@@ -99,6 +99,6 @@ class SelectorList(ListSpec):
         
         # Extract single-valued properties from list
         if self._parent.output == "single":
-            return matches[0]
+            return "" if len(matches) == 0 else matches[0]
         else:
             return matches
