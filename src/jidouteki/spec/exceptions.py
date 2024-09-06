@@ -9,3 +9,6 @@ class MissingParseParameter(SpecError):
 
 class PropertyTypeMismatch(SpecError):
     pass
+
+class UnfetchableParser(SpecError):
+    pass

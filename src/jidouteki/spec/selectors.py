@@ -2,7 +2,7 @@ from bs4 import BeautifulSoup
 from jidouteki.spec import ListSpec, DictSpec
 from jidouteki.spec.exceptions import PropertyTypeMismatch
 import re
-from collections import OrderedDict
+from typing import Literal
 
 import typing
 if typing.TYPE_CHECKING:
@@ -72,6 +72,7 @@ class Selector(DictSpec):
     """
     type: str
     query: str
+    output: Literal["multiple", "single"] = "multiple"
     pipeline: Pipeline
     
     def match(self, document: BeautifulSoup):
@@ -85,20 +86,9 @@ class Selector(DictSpec):
             case _: raise PropertyTypeMismatch(self.type)
         if self.pipeline:
             matches = self.pipeline.process(matches)
-        return matches
-        
-class SelectorList(ListSpec):
-    def __init__(self, arglist, **kwargs):
-        super().__init__([Selector(f, **kwargs) for f in arglist], **kwargs)
-    
-    def match(self, document):
-        matches = []
-        for s in self:
-            s: Selector
-            matches.extend(s.match(document))
         
         # Extract single-valued properties from list
-        if self._parent.output == "single":
+        if self.output == "single":
             return "" if len(matches) == 0 else matches[0]
         else:
             return matches

@@ -1,6 +1,6 @@
 
 from . import driver
-from . import parsers
+from . import fetchers
 from . import spec
 from . import main
 

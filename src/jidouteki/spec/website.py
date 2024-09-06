@@ -1,7 +1,9 @@
 
 from jidouteki.spec import DictSpec, ListSpec, Root
-from jidouteki.parsers import ParserList
+from jidouteki.fetchers import *
+from jidouteki.spec.selectors import Selector
 from jidouteki.spec.meta import Meta
+from jidouteki.spec.exceptions import UnfetchableParser
 import re
 
 class Metadata(DictSpec):
@@ -9,24 +11,36 @@ class Metadata(DictSpec):
     key: str = Meta.REQUIRED
     display_name: str = Meta.REQUIRED
     languages: list
-    
-class Parsable(DictSpec):
-    params: list
-    parsers: ParserList = Meta.REQUIRED
-    
-    def parse(self, *args, **kwargs) -> list:
-        return self.parsers.parse(*args, **kwargs)
 
+class Fetchable(DictSpec):
+    fetcher: RequestFetcher | NetworkFetcher
+    
+class Parsable(Fetchable):
+    selector: Selector = Meta.REQUIRED
+    
+    def __init__(self, arglist, **kwargs):
+        super().__init__(arglist, **kwargs)
+        if not self.fetcher: 
+            self.fetcher = self._parent.fetcher
+        if not self.fetcher: raise UnfetchableParser()
+
+    def parse(self, **kwargs):
+        data = self.fetcher.fetch(**kwargs)
+        for soup in data:
+            result = self.selector.match(soup)
+            if result: return result
+        return None
+    
 class Static(DictSpec):
     static: dict | list | str
 
     def parse(self, *args, **kwargs):
         return self.static
 
-class Series(DictSpec):
+class Series(Fetchable):
     title: Parsable | Static
-    cover: Parsable
-    chapters: Parsable
+    cover: Parsable | Static
+    chapters: Parsable | Static
 
 class Match(ListSpec):
     def parse(self, url):
@@ -34,15 +48,13 @@ class Match(ListSpec):
             if (m := re.match(regex, url)):
                 return m.groupdict()
 
-class Chapter(DictSpec):
-    pages: Parsable
-
-class Search(DictSpec):
+class Search(Fetchable):
     series: Parsable
 
 class Website(Root):    
     metadata: Metadata
     match: Match
+    
     series: Series
-    chapter: Chapter
+    images: Parsable
     search: Search

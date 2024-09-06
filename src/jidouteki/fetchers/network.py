@@ -3,13 +3,13 @@ import typing
 if typing.TYPE_CHECKING:
     from jidouteki.spec.website import Website
 
-from jidouteki.parsers import Parser
+from jidouteki.fetchers import Fetcher
 from jidouteki.spec.filters import FilterList
 from jidouteki.driver import DriverManager, WebDriver, utils as driver_utils
 import requests
 from urllib.parse import urljoin
 
-class NetworkParser(Parser):
+class NetworkFetcher(Fetcher):
     urls: list
     filters: FilterList
     _url_index = 0
@@ -27,7 +27,7 @@ class NetworkParser(Parser):
         url = None
         while True:
             url = self.urls[self._url_index]
-            url = str.format(url, series=series, chapter=chapter)
+            url = str.format(url, series=series, chapter=chapter) # TODO: use global formatting
             self._url_index += 1
             if check:
                 if not requests.get(url).ok:
@@ -35,17 +35,17 @@ class NetworkParser(Parser):
             break
         return url
     
-    def network_filter(self, net_data, **fvalues):
-        out = []
-        for net_object in net_data:
-            object = {
-                'url': net_object['name']
-            }
-            if self.filters.match(object, **fvalues):
-                out.append(object['url'])
-        return out
+    # def network_filter(self, net_data, **fvalues):
+    #     out = []
+    #     for net_object in net_data:
+    #         object = {
+    #             'url': net_object['name']
+    #         }
+    #         if self.filters.match(object, **fvalues):
+    #             out.append(object['url'])
+    #     return out
     
-    def filter_network_resources(self, driver: WebDriver, fvalues: dict, quiet=150, target=2):
+    def page_load(self, driver: WebDriver, quiet=150):
         state_ticks = 0
         state_len = 0
         
@@ -55,32 +55,24 @@ class NetworkParser(Parser):
         while True:
             driver_utils.scroll(driver, HEIGHT)
             net_data = driver_utils.get_net_data(driver)
-            output.update(self.network_filter(net_data, **fvalues))
+            output.update(net_data)
+            # output.update(self.network_filter(net_data, **fvalues))
             
-            if target:
-                if len(output) >= target:
+            if state_len == len(output):
+                if state_ticks >= quiet:
                     break
-            else:
-                if state_len == len(output):
-                    if state_ticks >= quiet:
-                        break
-                    else: state_ticks += 1
-                else: state_ticks = 0
-                state_len = len(output)
+                else: state_ticks += 1
+            else: state_ticks = 0
+            state_len = len(output)
             
         return list(output)
     
-    def parse(self, *args, **kwargs):
+    def fetch(self, **kwargs):
+        ret = [] 
         while True:
             url = self.next_url(**kwargs)
             if url == None: break
             driver = DriverManager.get()
             driver.get(url)
-            substrs = {
-                'series': kwargs.get("series", ""),
-                'chapter': kwargs.get("chapter", "")
-            }
-            target = kwargs.get("max_count", None)
-            resources = self.filter_network_resources(driver, kwargs, target=target)
-            if resources and len(resources) != 0:
-                return resources
+            ret.append(self.page_load(driver, kwargs))
+        return ret
