@@ -23,7 +23,7 @@ class Fetcher(DictSpec, ABC):
         return cache[cache_key][0]
     
     def key(self, **kwargs):
-        return hash(str((self.type,self.params,self._key())))
+        return hash(str((self.type,self.params,self._key(),kwargs)))
     
     @abstractmethod
     def _key(self):
