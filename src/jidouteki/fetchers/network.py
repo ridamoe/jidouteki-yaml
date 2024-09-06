@@ -11,7 +11,7 @@ from urllib.parse import urljoin
 
 class NetworkFetcher(Fetcher):
     urls: list
-    filters: FilterList
+    # filters: FilterList
     _url_index = 0
     
     def __init__(self, arglist, **kwargs) -> None:
@@ -67,7 +67,11 @@ class NetworkFetcher(Fetcher):
             
         return list(output)
     
-    def fetch(self, **kwargs):
+    def _key(self):
+        return (self.urls,)
+    
+    
+    def _fetch(self, **kwargs):
         ret = [] 
         while True:
             url = self.next_url(**kwargs)

@@ -8,7 +8,10 @@ from typing import List
 class Jidouteki():
     def __init__(self, proxy: None) -> None:
         self.proxy = proxy
-    
+        self.cache_ttl = 180 # in seconds
+        
+        self._cache = {}
+        
     def load(self, path) -> Website:
         """Load YAML config from given path
 

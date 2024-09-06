@@ -26,7 +26,7 @@ class RequestFetcher(Fetcher):
             urls.append(urljoin(self._root.metadata.base, child_url))
         self.urls = urls
     
-    def fetch(self, **kwargs):
+    def _fetch(self, **kwargs):
         ret = []
         for url in self.urls:
             url = str.format(url, **kwargs)
@@ -35,3 +35,6 @@ class RequestFetcher(Fetcher):
             soup = BeautifulSoup(resp.content, features="lxml")
             ret.append(soup)
         return ret
+    
+    def _key(self):
+        return (self.urls,)
