@@ -3,6 +3,7 @@ from jidouteki.spec import ListSpec, DictSpec
 from jidouteki.spec.exceptions import PropertyTypeMismatch
 import re
 from typing import Literal
+import urllib.parse
 
 import typing
 if typing.TYPE_CHECKING:
@@ -49,7 +50,16 @@ class Pipeline(ListSpec):
                         return value.format(item)
                 case 'proxy':
                     def _process(item):
-                        return self._context.proxy + item
+                        params = []
+                        if "headers" in value:
+                            for key,val in value["headers"].items():
+                                header = ''.join([w.capitalize() for w in key.split('-')])
+                                params.append(('header', f"{header}: {val}"))
+                        
+                        params.append(("url", item))
+                        query_string = urllib.parse.urlencode(params)
+                            
+                        return f"{self._context.proxy}?{query_string}"
 
                 case _: raise PropertyTypeMismatch(f"Unknown pipeline step {key}")
             
